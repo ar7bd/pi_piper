@@ -11,19 +11,19 @@ module PiPiper
     #
     # @param [Hash] options A hash of options
     # @option options [Fixnum] :pin The pin number to initialize. Required.
-    # 
-    # @option options [Symbol] :direction The direction of communication, 
+    #
+    # @option options [Symbol] :direction The direction of communication,
     # either :in or :out. Defaults to :in.
-    # 
-    # @option options [Boolean] :invert Indicates if the value read from the 
+    #
+    # @option options [Boolean] :invert Indicates if the value read from the
     # physical pin should be inverted. Defaults to false.
-    # 
-    # @option options [Symbol] :trigger Indicates when the wait_for_change 
-    # method will detect a change, either :rising, :falling, or :both edge 
+    #
+    # @option options [Symbol] :trigger Indicates when the wait_for_change
+    # method will detect a change, either :rising, :falling, or :both edge
     # triggers. Defaults to :both.
-    # 
-    # @option options [Symbol] :pull Indicates if and how pull mode must be 
-    # set when pin direction is set to :in. Either :up, :down or :offing. 
+    #
+    # @option options [Symbol] :pull Indicates if and how pull mode must be
+    # set when pin direction is set to :in. Either :up, :down or :offing.
     # Defaults to :off.
     #
     def initialize(options)
@@ -52,6 +52,8 @@ module PiPiper
         raise PiPiper::PinError, 'Invalid trigger. Options are :rising, :falling, or :both'
       end
 
+      File.open("/sys/class/gpio/unexport", "w") { |f| f.write(@pin) }
+
       if @direction == :out
         Platform.driver.pin_output(@pin)
       else
@@ -62,7 +64,7 @@ module PiPiper
       read
     end
 
-    # If the pin has been initialized for output this method will set the 
+    # If the pin has been initialized for output this method will set the
     # logic level high.
     def on
       Platform.driver.pin_set(pin, GPIO_HIGH) if direction == :out
@@ -73,7 +75,7 @@ module PiPiper
       not off?
     end
 
-    # If the pin has been initialized for output this method will set 
+    # If the pin has been initialized for output this method will set
     # the logic level low.
     def off
       Platform.driver.pin_set(pin, GPIO_LOW) if direction == :out
@@ -88,7 +90,7 @@ module PiPiper
       @value ||= read
     end
 
-    # If the pin has been initialized for output this method will either raise 
+    # If the pin has been initialized for output this method will either raise
     # or lower the logic level depending on `new_value`.
     # @param [Object] new_value If false or 0 the pin will be set to off, otherwise on.
     def update_value(new_value)
@@ -96,18 +98,18 @@ module PiPiper
     end
     alias_method :value=, :update_value
 
-    # When the pin has been initialized in input mode, internal resistors can 
+    # When the pin has been initialized in input mode, internal resistors can
     # be pulled up or down (respectively with :up and :down).
-    # 
+    #
     # Pulling an input pin will prevent noise from triggering it when the input
     # is floating.
-    # 
-    # For instance when nothing is plugged in, pulling the pin-up will make 
+    #
+    # For instance when nothing is plugged in, pulling the pin-up will make
     # subsequent value readings to return 'on' (or high, or 1...).
-    # @param [Symbol] state Indicates if and how pull mode must be set when 
+    # @param [Symbol] state Indicates if and how pull mode must be set when
     # pin direction is set to :in. Either :up, :down or :offing. Defaults to :off.
     def pull!(state)
-     raise PiPiper::PinError, "Unable to use pull-ups : pin direction must be ':in' for this" if 
+     raise PiPiper::PinError, "Unable to use pull-ups : pin direction must be ':in' for this" if
         @direction != :in and [:up, :down].include?(state)
       @pull = case state
               when :up then GPIO_PUD_UP
@@ -121,7 +123,7 @@ module PiPiper
       @pull
     end
 
-    # If the pin direction is input, it will return the current state of 
+    # If the pin direction is input, it will return the current state of
     # pull-up/pull-down resistor, either :up, :down or :off.
     def pull?
       case @pull
@@ -136,16 +138,16 @@ module PiPiper
       last_value != value
     end
 
-    # Blocks until a logic level change occurs. The initializer option 
+    # Blocks until a logic level change occurs. The initializer option
     # `:trigger` modifies what edge this method will release on.
     def wait_for_change
       Platform.driver.pin_wait_for(@pin, @trigger)
     end
-    
-    # Reads the current value from the pin. Without calling this method 
+
+    # Reads the current value from the pin. Without calling this method
     # first, `value`, `last_value` and `changed?` will not be updated.
-    # 
-    # In short, you must call this method if you are curious about the 
+    #
+    # In short, you must call this method if you are curious about the
     # current state of the pin.
     def read
       val = Platform.driver.pin_read(@pin)
@@ -157,7 +159,7 @@ module PiPiper
     def method_missing(method, *args, &block)
       Platform.driver.send(method, @pin, *args, &block)
 		end
-		
+
     def valid_trigger?
       [:rising, :falling, :both].include?(@trigger)
     end
