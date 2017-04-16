@@ -52,8 +52,6 @@ module PiPiper
         raise PiPiper::PinError, 'Invalid trigger. Options are :rising, :falling, or :both'
       end
 
-      File.open("/sys/class/gpio/unexport", "w") { |f| f.write(@pin.to_s) }
-
       if @direction == :out
         Platform.driver.pin_output(@pin)
       else
